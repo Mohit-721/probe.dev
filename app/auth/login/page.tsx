@@ -11,6 +11,14 @@ import { Spinner } from "@/components/ui/spinner"
 import { ArrowRight } from "lucide-react"
 
 export default function LoginPage() {
+  return (
+    <React.Suspense fallback={<div className="flex items-center justify-center py-12"><Spinner className="size-6" /></div>}>
+      <LoginForm />
+    </React.Suspense>
+  )
+}
+
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get("next") ?? "/dashboard"
