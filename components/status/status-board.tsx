@@ -10,18 +10,53 @@ import type { Monitor, Run, Incident } from "@/lib/types"
 type RunPart = Pick<Run, "id" | "status" | "duration_ms" | "started_at" | "completed_at">
 type IncidentPart = Pick<Incident, "id" | "title" | "summary" | "status" | "severity" | "opened_at" | "resolved_at">
 
+const POLL_INTERVAL = 30_000 // 30 seconds
+
 export function StatusBoard({
-  monitor,
-  runs,
-  incidents,
+  monitor: initialMonitor,
+  runs: initialRuns,
+  incidents: initialIncidents,
+  publicToken,
 }: {
   monitor: Monitor
   runs: RunPart[]
   incidents: IncidentPart[]
+  publicToken?: string
 }) {
   const root = React.useRef<HTMLElement | null>(null)
   const ringRef = React.useRef<SVGCircleElement | null>(null)
   const numberRef = React.useRef<HTMLSpanElement | null>(null)
+  const hasAnimated = React.useRef(false)
+
+  // Live state — initialized from the server, then updated via polling
+  const [monitor, setMonitor] = React.useState(initialMonitor)
+  const [runs, setRuns] = React.useState(initialRuns)
+  const [incidents, setIncidents] = React.useState(initialIncidents)
+  const [lastRefresh, setLastRefresh] = React.useState(Date.now())
+  const [isLive, setIsLive] = React.useState(true)
+
+  // Poll API for fresh data
+  React.useEffect(() => {
+    if (!publicToken) return
+
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`/api/status/${publicToken}`, { cache: "no-store" })
+        if (!res.ok) return
+        const data = await res.json()
+        setMonitor((prev: Monitor) => ({ ...prev, ...data.monitor }))
+        setRuns(data.runs)
+        setIncidents(data.incidents)
+        setLastRefresh(data.ts ?? Date.now())
+        setIsLive(true)
+      } catch {
+        setIsLive(false)
+      }
+    }
+
+    const id = window.setInterval(fetchData, POLL_INTERVAL)
+    return () => window.clearInterval(id)
+  }, [publicToken])
 
   const successCount = runs.filter((r) => r.status === "success").length
   const uptime = runs.length > 0 ? (successCount / runs.length) * 100 : 100
@@ -39,9 +74,12 @@ export function StatusBoard({
 
   const cfg = statusCopy[overallStatus]
 
+  // Initial reveal animation (only once)
   React.useEffect(() => {
+    if (hasAnimated.current) return
+    hasAnimated.current = true
+
     const ctx = gsap.context(() => {
-      // Reveal everything
       gsap.from("[data-reveal]", {
         y: 16,
         opacity: 0,
@@ -50,7 +88,6 @@ export function StatusBoard({
         ease: "power3.out",
       })
 
-      // Single batched stagger for all 90 cells (one tween instead of 90)
       gsap.from("[data-cell]", {
         opacity: 0,
         scale: 0.6,
@@ -59,38 +96,34 @@ export function StatusBoard({
         ease: "power2.out",
         stagger: { each: 0.005, from: "start" },
       })
-
-      // Animate the SLO ring
-      if (ringRef.current) {
-        const r = Number(ringRef.current.getAttribute("r"))
-        const c = 2 * Math.PI * r
-        ringRef.current.style.strokeDasharray = String(c)
-        gsap.fromTo(
-          ringRef.current,
-          { strokeDashoffset: c },
-          {
-            strokeDashoffset: c - (uptime / 100) * c,
-            duration: 1.4,
-            ease: "power3.out",
-          },
-        )
-      }
-
-      // Counter animation
-      if (numberRef.current) {
-        const target = uptime
-        const obj = { v: 0 }
-        gsap.to(obj, {
-          v: target,
-          duration: 1.4,
-          ease: "power3.out",
-          onUpdate: () => {
-            if (numberRef.current) numberRef.current.textContent = obj.v.toFixed(2)
-          },
-        })
-      }
     }, root)
     return () => ctx.revert()
+  }, [])
+
+  // Animate uptime ring whenever uptime changes
+  React.useEffect(() => {
+    if (ringRef.current) {
+      const r = Number(ringRef.current.getAttribute("r"))
+      const c = 2 * Math.PI * r
+      ringRef.current.style.strokeDasharray = String(c)
+      gsap.to(ringRef.current, {
+        strokeDashoffset: c - (uptime / 100) * c,
+        duration: 1.4,
+        ease: "power3.out",
+      })
+    }
+
+    if (numberRef.current) {
+      const obj = { v: parseFloat(numberRef.current.textContent ?? "0") }
+      gsap.to(obj, {
+        v: uptime,
+        duration: 1.4,
+        ease: "power3.out",
+        onUpdate: () => {
+          if (numberRef.current) numberRef.current.textContent = obj.v.toFixed(2)
+        },
+      })
+    }
   }, [uptime])
 
   // Build 90-cell strip (older → newer)
@@ -162,7 +195,7 @@ export function StatusBoard({
                 <h2 className="text-sm font-medium">Last 90 probes</h2>
                 <p className="text-xs text-muted-foreground">Each tile is a single probe · oldest left, newest right</p>
               </div>
-              <LiveIndicator />
+              <LiveIndicator isLive={isLive} lastRefresh={lastRefresh} />
             </div>
             <div className="flex items-center gap-3 text-[11px] font-mono text-muted-foreground">
               <Legend color="var(--primary)" label="success" />
@@ -358,22 +391,38 @@ function Cell({ run }: { run: RunPart | null }) {
   )
 }
 
-function LiveIndicator({ intervalSeconds = 30 }: { intervalSeconds?: number }) {
-  const [remaining, setRemaining] = React.useState(intervalSeconds)
+function LiveIndicator({ isLive, lastRefresh }: { isLive: boolean; lastRefresh: number }) {
+  const [countdown, setCountdown] = React.useState(30)
+
+  React.useEffect(() => {
+    // Reset countdown when fresh data arrives
+    setCountdown(30)
+  }, [lastRefresh])
+
   React.useEffect(() => {
     const id = window.setInterval(() => {
-      setRemaining((r) => (r <= 1 ? intervalSeconds : r - 1))
+      setCountdown((c) => (c <= 1 ? 30 : c - 1))
     }, 1000)
     return () => window.clearInterval(id)
-  }, [intervalSeconds])
+  }, [])
 
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur">
       <span className="relative grid size-1.5 place-items-center">
-        <span className="absolute size-full animate-ping rounded-full bg-primary/60" />
-        <span className="size-1.5 rounded-full bg-primary shadow-[0_0_6px_var(--primary)]" />
+        <span
+          className={cn(
+            "absolute size-full rounded-full",
+            isLive ? "animate-ping bg-primary/60" : "bg-destructive/60",
+          )}
+        />
+        <span
+          className={cn(
+            "size-1.5 rounded-full",
+            isLive ? "bg-primary shadow-[0_0_6px_var(--primary)]" : "bg-destructive shadow-[0_0_6px_var(--destructive)]",
+          )}
+        />
       </span>
-      live · {remaining}s
+      {isLive ? `live · ${countdown}s` : "reconnecting…"}
     </span>
   )
 }

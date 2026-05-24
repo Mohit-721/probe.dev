@@ -6,7 +6,7 @@ import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import type { Monitor, Run, Incident } from "@/lib/types"
 
-export const revalidate = 30 // refresh public page every 30s
+export const revalidate = 30 // ISR still useful as a cache layer
 
 export default async function PublicStatusPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -55,12 +55,12 @@ export default async function PublicStatusPage({ params }: { params: Promise<{ t
         </div>
       </header>
 
-      <StatusBoard monitor={monitor} runs={runs} incidents={incidents} />
+      <StatusBoard monitor={monitor} runs={runs} incidents={incidents} publicToken={token} />
 
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row md:px-6">
           <span className="font-mono">
-            Page auto-refreshes every 30s · last refresh {new Date().toLocaleTimeString()}
+            Auto-refreshes every 30s · data updates in real-time
           </span>
           <Link href="/" className="font-mono hover:text-foreground">
             powered by Probe
