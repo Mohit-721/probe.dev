@@ -20,6 +20,8 @@ export function RunNowButton({ monitorId }: { monitorId: string }) {
       } else {
         toast.error("Probe failed", { description: "One or more assertions failed." })
       }
+      // Signal live-polling components to refresh immediately
+      window.dispatchEvent(new CustomEvent("probe:run-complete"))
     })
   }
 

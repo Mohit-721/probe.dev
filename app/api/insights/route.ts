@@ -1,20 +1,20 @@
 import { streamText, convertToModelMessages, type UIMessage } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
 import { createClient } from "@/lib/supabase/server"
-import { Redis } from "@upstash/redis"
+import { redis } from "@/lib/redis"
 
 export const maxDuration = 60
-
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
-})
 
 /**
  * Rate limit: 20 AI queries per user per hour.
  * Prevents single user from running up the AI Gateway bill.
  */
 async function checkInsightsRateLimit(userId: string): Promise<{ ok: boolean; remaining: number }> {
+  if (!redis) {
+    // Redis not configured — fail open
+    return { ok: true, remaining: -1 }
+  }
+
   const key = `insights:${userId}`
   const limit = 20
   const window = 3600 // 1 hour in seconds
