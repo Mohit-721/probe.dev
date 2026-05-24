@@ -31,8 +31,14 @@ export async function createMonitor(formData: FormData) {
   const url = String(formData.get("url") ?? "").trim()
   const expectedStatus = Number(formData.get("expected_status") ?? 200)
   const maxDuration = Number(formData.get("max_duration_ms") ?? 5000)
-  const headerName = String(formData.get("header_name") ?? "").trim()
+  let headerName = String(formData.get("header_name") ?? "").trim()
   const headerValue = String(formData.get("header_value") ?? "").trim()
+
+  // If user entered a value but forgot/skipped the header name,
+  // auto-default to "Authorization" (the most common use case).
+  if (!headerName && headerValue) {
+    headerName = "Authorization"
+  }
   const body = String(formData.get("body") ?? "").trim()
   const schedule = String(formData.get("schedule") ?? "*/5 * * * *").trim()
 

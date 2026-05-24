@@ -76,11 +76,11 @@ export function NewMonitorForm() {
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <Field id="header_name" label="Header name" hint="Optional auth or custom header.">
-              <Input id="header_name" name="header_name" placeholder="Authorization" className="h-11 font-mono" />
+            <Field id="header_name" label="Header name" hint="Defaults to Authorization. Change if needed.">
+              <Input id="header_name" name="header_name" defaultValue="Authorization" className="h-11 font-mono" />
             </Field>
-            <Field id="header_value" label="Header value">
-              <Input id="header_value" name="header_value" placeholder="Bearer ..." className="h-11 font-mono" />
+            <Field id="header_value" label="Header value" hint="Leave empty if no auth is needed.">
+              <Input id="header_value" name="header_value" placeholder="Bearer your-api-key-here" className="h-11 font-mono" />
             </Field>
           </div>
 
