@@ -30,10 +30,15 @@ export async function runMonitorNow(monitorId: string) {
     return { error: error?.message ?? "Monitor not found" }
   }
 
-  const result = await runMonitor(supabase, monitor as Monitor, "manual")
+  try {
+    const result = await runMonitor(supabase, monitor as Monitor, "manual")
 
-  revalidatePath(`/dashboard/monitors/${monitorId}`)
-  revalidatePath("/dashboard")
-  revalidatePath("/dashboard/runs")
-  return { ok: true, runId: result.runId, status: result.status }
+    revalidatePath(`/dashboard/monitors/${monitorId}`)
+    revalidatePath("/dashboard")
+    revalidatePath("/dashboard/runs")
+    return { ok: true, runId: result.runId, status: result.status }
+  } catch (err) {
+    console.error("[runMonitorNow] Execution crashed:", err)
+    return { error: err instanceof Error ? err.message : "An unexpected error occurred during execution." }
+  }
 }

@@ -60,7 +60,19 @@ export default async function MonitorDetailPage({ params }: { params: Promise<{ 
           <Stat label="Uptime" value={`${uptime.toFixed(1)}%`} sub={`last ${runs.length} runs`} />
           <Stat label="Avg latency" value={`${avgLatency}ms`} sub="across recent runs" />
           <Stat label="Schedule" value={monitor.schedule} mono sub={monitor.enabled ? "active" : "paused"} />
-          <Stat label="Last run" value={monitor.last_run_at ? new Date(monitor.last_run_at).toLocaleTimeString() : "—"} sub={monitor.last_run_at ? new Date(monitor.last_run_at).toLocaleDateString() : "no data"} />
+          <Stat
+            label="Last run"
+            value={(() => {
+              if (!monitor.last_run_at) return "—"
+              const d = new Date(monitor.last_run_at)
+              return isNaN(d.getTime()) ? "—" : d.toLocaleTimeString()
+            })()}
+            sub={(() => {
+              if (!monitor.last_run_at) return "no data"
+              const d = new Date(monitor.last_run_at)
+              return isNaN(d.getTime()) ? "no data" : d.toLocaleDateString()
+            })()}
+          />
         </div>
 
         {/* Latency chart */}

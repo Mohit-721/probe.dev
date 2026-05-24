@@ -18,11 +18,17 @@ export function LatencyChart({ points }: { points: Point[] }) {
       points
         .slice()
         .sort((a, b) => a.t - b.t)
-        .map((p) => ({
-          time: new Date(p.t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          ms: p.ms,
-          failed: p.status === "failed" ? p.ms : null,
-        })),
+        .map((p) => {
+          const d = new Date(p.t)
+          const timeStr = isNaN(d.getTime())
+            ? "—"
+            : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          return {
+            time: timeStr,
+            ms: p.ms,
+            failed: p.status === "failed" ? p.ms : null,
+          }
+        }),
     [points],
   )
 
