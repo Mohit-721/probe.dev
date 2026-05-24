@@ -121,7 +121,7 @@ export function InsightsClient({
 
         {error ? (
           <div className="border-t border-destructive/30 bg-destructive/10 px-5 py-3 font-mono text-xs text-destructive">
-            {error.message ?? "Something went wrong. Set AI_GATEWAY_API_KEY in your project to enable Insights."}
+            {error.message ?? "Something went wrong. Set OPENAI_API_KEY in your project to enable Insights."}
           </div>
         ) : null}
 
@@ -168,8 +168,8 @@ export function InsightsClient({
             <Sparkles className="size-3.5 text-primary" /> How it works
           </div>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            Probe sends a compact, RLS-safe summary of <em>your</em> monitors and recent runs to GPT-5. Nothing else
-            leaves your workspace. Responses stream in real time.
+            Probe sends a compact, RLS-safe summary of <em>your</em> monitors and recent runs to the configured AI
+            model. Nothing else leaves your workspace. Responses stream in real time.
           </p>
         </div>
       </aside>

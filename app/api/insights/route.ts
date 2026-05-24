@@ -38,6 +38,10 @@ async function checkInsightsRateLimit(userId: string): Promise<{ ok: boolean; re
 export async function POST(req: Request) {
   const { messages, monitorId }: { messages: UIMessage[]; monitorId?: string } = await req.json()
 
+  if (!process.env.OPENAI_API_KEY) {
+    return new Response("OPENAI_API_KEY is not configured", { status: 500 })
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -143,7 +147,7 @@ export async function POST(req: Request) {
   const modelName = process.env.OPENAI_MODEL_NAME || "meta/llama-3.1-70b-instruct"
 
   const result = streamText({
-    model: openaiInstance(modelName),
+    model: openaiInstance.chat(modelName),
     system,
     messages: await convertToModelMessages(messages),
   })

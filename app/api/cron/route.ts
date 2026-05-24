@@ -75,7 +75,7 @@ export async function GET(request: Request) {
   for (let i = 0; i < monitors.length; i += concurrency) {
     const batch = monitors.slice(i, i + concurrency)
     const results = await Promise.allSettled(
-      batch.map((m) => runMonitor(supabase, m)),
+      batch.map((m) => runMonitor(supabase, m, "schedule")),
     )
 
     for (const result of results) {

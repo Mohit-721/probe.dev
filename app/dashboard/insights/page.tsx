@@ -28,7 +28,7 @@ export default async function InsightsPage() {
             </span>
           </span>
         }
-        description="Ask anything about your monitors. Probe analyzes recent runs, incidents, and assertion failures using GPT-5."
+        description="Ask anything about your monitors. Probe analyzes recent runs, incidents, and assertion failures using your configured AI model."
       />
 
       <div className="px-4 py-6 md:px-8 md:py-8">

@@ -87,7 +87,7 @@ async function resolvePublicIp(hostname: string): Promise<string> {
   if (hostname === "localhost") {
     throw new SsrfError("Refusing to connect to localhost")
   }
-  let addrs: dns.LookupAddress[]
+  let addrs: Array<{ address: string; family: number }>
   try {
     addrs = await dns.lookup(hostname, { all: true, verbatim: true })
   } catch (err) {
