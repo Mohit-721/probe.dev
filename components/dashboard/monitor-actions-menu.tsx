@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { MoreVertical, Power, Trash2 } from "lucide-react"
+import { MoreVertical, Pencil, Power, Trash2 } from "lucide-react"
 import { deleteMonitor, toggleMonitor } from "@/app/dashboard/monitors/actions"
 import {
   DropdownMenu,
@@ -11,16 +11,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { EditMonitorSheet } from "@/components/dashboard/edit-monitor-sheet"
 import { toast } from "sonner"
+import type { Monitor } from "@/lib/types"
 
 export function MonitorActionsMenu({
   monitorId,
   enabled,
+  monitor,
 }: {
   monitorId: string
   enabled: boolean
+  monitor?: Monitor
 }) {
   const [pending, startTransition] = React.useTransition()
+  const [editOpen, setEditOpen] = React.useState(false)
 
   function handleToggle() {
     startTransition(async () => {
@@ -38,22 +43,33 @@ export function MonitorActionsMenu({
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" disabled={pending} className="rounded-full bg-transparent">
-          <MoreVertical className="size-4" />
-          <span className="sr-only">Monitor actions</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-44">
-        <DropdownMenuItem onClick={handleToggle}>
-          <Power className="mr-2 size-4" /> {enabled ? "Pause" : "Resume"}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
-          <Trash2 className="mr-2 size-4" /> Delete
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" disabled={pending} className="rounded-full bg-transparent">
+            <MoreVertical className="size-4" />
+            <span className="sr-only">Monitor actions</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-44">
+          {monitor && (
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>
+              <Pencil className="mr-2 size-4" /> Edit
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={handleToggle}>
+            <Power className="mr-2 size-4" /> {enabled ? "Pause" : "Resume"}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
+            <Trash2 className="mr-2 size-4" /> Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {monitor && (
+        <EditMonitorSheet monitor={monitor} open={editOpen} onOpenChange={setEditOpen} />
+      )}
+    </>
   )
 }

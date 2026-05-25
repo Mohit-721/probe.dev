@@ -133,6 +133,77 @@ export async function deleteMonitor(monitorId: string) {
   redirect("/dashboard/monitors")
 }
 
+export async function updateMonitor(monitorId: string, formData: FormData) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/login")
+
+  const name = String(formData.get("name") ?? "").trim()
+  const description = String(formData.get("description") ?? "").trim() || null
+  const method = String(formData.get("method") ?? "GET").toUpperCase() as HttpMethod
+  const url = String(formData.get("url") ?? "").trim()
+  const expectedStatus = Number(formData.get("expected_status") ?? 200)
+  const maxDuration = Number(formData.get("max_duration_ms") ?? 5000)
+  let headerName = String(formData.get("header_name") ?? "").trim()
+  const headerValue = String(formData.get("header_value") ?? "").trim()
+  if (!headerName && headerValue) headerName = "Authorization"
+  const body = String(formData.get("body") ?? "").trim()
+  const schedule = String(formData.get("schedule") ?? "*/5 * * * *").trim()
+
+  if (!name || !url) return { error: "Name and URL are required" }
+
+  try {
+    await validateUrlForOutbound(url)
+  } catch (err) {
+    if (err instanceof SsrfError) return { error: err.message }
+    return { error: "URL is not reachable" }
+  }
+
+  if (!/^\S+(\s+\S+){4,5}$/.test(schedule)) {
+    return { error: "Schedule must be a 5- or 6-field cron expression" }
+  }
+
+  const slug = slugify(name) || `monitor-${Date.now()}`
+  const headers: Record<string, string> = {}
+  if (headerName) headers[headerName] = headerValue
+
+  const assertions: Assertion[] = [
+    { kind: "status", op: "eq", value: expectedStatus },
+    { kind: "duration_ms", op: "lt", value: maxDuration },
+  ]
+
+  const step: MonitorStep = {
+    name: "request",
+    method,
+    url,
+    headers: Object.keys(headers).length ? headers : undefined,
+    body: body && method !== "GET" && method !== "HEAD" ? body : undefined,
+    assertions,
+  }
+
+  const { error } = await supabase
+    .from("monitors")
+    .update({
+      name,
+      slug,
+      description,
+      schedule,
+      config: { steps: [step] },
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", monitorId)
+    .eq("user_id", user.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/dashboard/monitors/${monitorId}`)
+  revalidatePath("/dashboard/monitors")
+  revalidatePath("/dashboard")
+  return { ok: true }
+}
+
 export async function toggleMonitor(monitorId: string, enabled: boolean) {
   const supabase = await createClient()
   const {

@@ -82,7 +82,7 @@ export function MonitorDetailLive({
         <div className="flex items-center gap-2">
           <StatusPill status={monitor.last_status} />
           <RunNowButton monitorId={monitor.id} />
-          <MonitorActionsMenu monitorId={monitor.id} enabled={monitor.enabled} />
+          <MonitorActionsMenu monitorId={monitor.id} enabled={monitor.enabled} monitor={monitor} />
         </div>
       </div>
 
