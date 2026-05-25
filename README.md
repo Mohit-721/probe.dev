@@ -4,8 +4,6 @@
 
 A 200 OK doesn't mean it works. Probe runs stateful, multi-step API checks with schema validation, security scanning, and AI-powered diagnostic insights — so you catch failures before your users do.
 
-![Probe Dashboard](https://probe-dev.vercel.app/og.png)
-
 **Live demo → [probe-dev.vercel.app](https://probe-dev.vercel.app)**
 
 ---
@@ -238,11 +236,6 @@ git push origin feat/your-feature
 
 ---
 
-## 📄 License
-
-MIT — see [LICENSE](./LICENSE) for details.
-
----
 
 <p align="center">
   Built with ♥ · <a href="https://probe-dev.vercel.app">Live Demo</a> · <a href="https://github.com/Mohit-721/probe.dev/issues">Report a Bug</a>
